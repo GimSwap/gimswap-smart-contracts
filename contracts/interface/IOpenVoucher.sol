@@ -17,7 +17,8 @@ interface IOpenVoucher {
   function transferVoucherAndCall(
     address to,
     uint256 value,
-    address callee
+    address callee,
+    bytes calldata data
   ) external returns (bool);
 
   function transferVoucherForExchange(

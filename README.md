@@ -76,6 +76,6 @@ To check the size of contracts in the repo, run the following command.
 $ yarn contract-size # Ignores tests
 ```
 
-## Additional Documentations
+## Relational Documentations
 
 - [OpenVoucher Protocol](https://victorious-lawyer-65b.notion.site/Open-Protocol-84bc8f4b0b1f4a12ae1b147723de6b72?pvs=4)

@@ -3,7 +3,7 @@
 # GimSwap
 <!-- prettier-ignore-end -->
 
-This repository contains the smart contracts for Gimswap, which can be used on EVM-compatible blockchains. All contracts are written in [Solidity](https://soliditylang.org/) and managed
+This repository contains the smart contracts for [GimSwap](https://www.gimswap.com), which can be used on EVM-compatible blockchains. All contracts are written in [Solidity](https://soliditylang.org/) and managed
 by the [Hardhat](https://hardhat.org/) framework.
 
 ## Setup

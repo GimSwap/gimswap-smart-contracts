@@ -1,0 +1,18 @@
+[profile.default]
+src = "contracts"
+out = "artifacts/foundry"
+cache_path = "cache/foundry"
+script = "scripts"
+optimizer_runs = 200
+libs = [
+    "lib",
+    "node_modules",
+]
+remappings = [
+    "forge-std/=lib/forge-std/src",
+    "@openzeppelin/=node_modules/@openzeppelin/",
+]
+extra-output-files = [
+    "bin",
+    "metadata"
+]

@@ -3,9 +3,10 @@ pragma solidity ^0.8.20;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ITransferCallback } from "../interface/ITransferCallback.sol";
 
-contract TOT is ERC20, ReentrancyGuard {
+contract TOT is ERC20, ReentrancyGuard, Ownable(msg.sender) {
   uint8 private newDecimals;
   address public minter;
 

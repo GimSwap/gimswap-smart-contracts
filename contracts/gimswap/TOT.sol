@@ -3,13 +3,16 @@ pragma solidity ^0.8.20;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ITransferCallback } from "../interface/ITransferCallback.sol";
 
-contract TOT is ERC20, ReentrancyGuard, Ownable {
+contract TOT is ERC20, ReentrancyGuard {
   uint8 private newDecimals;
+  address public minter;
 
   error TransferFailed();
+  error UnauthorizedAccount(address);
+  error MinterAlreadySet();
+  error CalleeShouldBeContract(address);
 
   /**
    * @notice Constructor to initialize the TOT contract.
@@ -21,8 +24,36 @@ contract TOT is ERC20, ReentrancyGuard, Ownable {
     string memory _name,
     string memory _symbol,
     uint8 _decimals
-  ) ERC20(_name, _symbol) Ownable(msg.sender) {
+  ) ERC20(_name, _symbol) {
     newDecimals = _decimals;
+  }
+
+  /**
+   * @notice Throws if the sender is not the minter.
+   */
+  function _checkMinter() internal view {
+    if (minter != msg.sender) {
+      revert UnauthorizedAccount(msg.sender);
+    }
+  }
+
+  /**
+   * @notice Throws if called by any account other than the minter.
+   */
+  modifier onlyMinter() {
+    _checkMinter();
+    _;
+  }
+
+  /**
+   * @notice Sets the minter address if it has not been set already.
+   * @param _minter The address to set as the minter.
+   */
+  function setMinter(address _minter) external {
+    if (minter != address(0)) {
+      revert MinterAlreadySet();
+    }
+    minter = _minter;
   }
 
   /**
@@ -38,7 +69,7 @@ contract TOT is ERC20, ReentrancyGuard, Ownable {
    * @param to     The address to receive the minted tokens.
    * @param amount The amount of tokens to mint.
    */
-  function mint(address to, uint256 amount) public onlyOwner {
+  function mint(address to, uint256 amount) public onlyMinter {
     _mint(to, amount);
   }
 
@@ -46,7 +77,7 @@ contract TOT is ERC20, ReentrancyGuard, Ownable {
    * @notice Burns tokens from the owner's balance.
    * @param amount The amount of tokens to burn.
    */
-  function burn(uint256 amount) public onlyOwner {
+  function burn(uint256 amount) public onlyMinter {
     _burn(msg.sender, amount);
   }
 
@@ -81,6 +112,8 @@ contract TOT is ERC20, ReentrancyGuard, Ownable {
 
     if (isContract(callee)) {
       ITransferCallback(callee).transferCallback(msg.sender, to, value);
+    } else {
+      revert CalleeShouldBeContract(callee);
     }
     return true;
   }

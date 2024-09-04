@@ -1,39 +1,46 @@
 import { OpenVoucher, OpenVoucherInstance } from "../helpers";
 import { GimSwapInstance } from "../../@types/generated/GimSwap";
 import { TOTInstance } from "../../@types/generated/TOT";
+import { GimSwapHelperInstance } from "../../@types/generated/GimSwapHelper";
 
 const TARGET_VERSION = "1";
 const consoleMessage = "gas used for the test below:";
 
 const GimSwap = artifacts.require("GimSwap");
+const GimSwapHelper = artifacts.require("GimSwapHelper");
 const TOT = artifacts.require("TOT");
 
 describe(`gas costs for version ${TARGET_VERSION}`, () => {
   let ov: OpenVoucherInstance;
   let tot: TOTInstance;
   let gimswap: GimSwapInstance;
+  let gimswapHelper: GimSwapHelperInstance;
   let ovOwner: string;
   let gimswapOwner: string;
   let gimswapFeeReceiver: string;
   let alice: string;
+  let bob: string;
 
   before(async () => {
     const accounts = await web3.eth.getAccounts();
-    if (accounts.length < 4) {
+    if (accounts.length < 5) {
       throw new Error(
         "Not enough accounts available. At least 5 accounts are required."
       );
     }
-    [ovOwner, gimswapOwner, gimswapFeeReceiver, alice] = accounts;
+    [ovOwner, gimswapOwner, gimswapFeeReceiver, alice, bob] = accounts;
   });
 
   beforeEach(async () => {
     const decimals = 6;
 
     ov = await OpenVoucher.new("OV", decimals, ovOwner);
-    gimswap = await GimSwap.new(ov.address, "TOT", "TOT", gimswapFeeReceiver, {
+    tot = await TOT.new("TOT", "TOT", decimals);
+    gimswap = await GimSwap.new(ov.address, tot.address, gimswapFeeReceiver, {
       from: gimswapOwner,
     });
+    await tot.setMinter(gimswap.address, { from: gimswapOwner });
+    gimswapHelper = await GimSwapHelper.new(gimswap.address);
     tot = await TOT.at(await gimswap.TOKEN_CONTRACT());
   });
 
@@ -73,4 +80,3 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
     );
     console.log(consoleMessage, tx.receipt.gasUsed);
   });
-});

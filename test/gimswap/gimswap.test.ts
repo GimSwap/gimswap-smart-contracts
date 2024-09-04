@@ -29,18 +29,22 @@ describe("GimSwap", () => {
     const totName = "TOT";
 
     ov = await OpenVoucher.new("OV", decimals, ovOwner);
-    gimswap = await GimSwap.new(
-      ov.address,
-      totName,
-      totName,
-      gimswapFeeReceiver,
-      { from: gimswapOwner }
-    );
-    tot = await TOT.at(await gimswap.TOKEN_CONTRACT());
+    tot = await TOT.new(totName, totName, decimals);
+    gimswap = await GimSwap.new(ov.address, tot.address, gimswapFeeReceiver, {
+      from: gimswapOwner,
+    });
+    await tot.setMinter(gimswap.address, { from: gimswapOwner });
     expect((await tot.decimals()).toNumber()).to.equal(decimals);
     expect(await tot.name()).to.equal(totName);
     expect(await tot.symbol()).to.equal(totName);
-    expect(await tot.owner()).to.equal(gimswap.address);
+    expect(await tot.minter()).to.equal(gimswap.address);
+  });
+
+  it("should fail to set minter of tot if it has not been set already", async () => {
+    await expectRevert(
+      tot.setMinter(gimswapOwner, { from: gimswapOwner }),
+      "MinterAlreadySet()"
+    );
   });
 
   it("should fail to set fee due to exceeding maximum limit", async () => {

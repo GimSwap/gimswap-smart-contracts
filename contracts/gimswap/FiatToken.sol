@@ -6,9 +6,11 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ITransferCallback } from "../interface/ITransferCallback.sol";
 
-contract TOT is ERC20, ReentrancyGuard, Ownable(msg.sender) {
+contract FiatToken is ERC20, ReentrancyGuard, Ownable(msg.sender) {
   uint8 private newDecimals;
-  address public minter;
+  string private newName;
+  string private newSymbol;
+  address public MINTER_ADDRESS;
 
   error TransferFailed();
   error UnauthorizedAccount(address);
@@ -26,6 +28,8 @@ contract TOT is ERC20, ReentrancyGuard, Ownable(msg.sender) {
     string memory _symbol,
     uint8 _decimals
   ) ERC20(_name, _symbol) {
+    newName = _name;
+    newSymbol = _symbol;
     newDecimals = _decimals;
   }
 
@@ -33,7 +37,7 @@ contract TOT is ERC20, ReentrancyGuard, Ownable(msg.sender) {
    * @notice Throws if the sender is not the minter.
    */
   function _checkMinter() internal view {
-    if (minter != msg.sender) {
+    if (MINTER_ADDRESS != msg.sender) {
       revert UnauthorizedAccount(msg.sender);
     }
   }
@@ -51,10 +55,25 @@ contract TOT is ERC20, ReentrancyGuard, Ownable(msg.sender) {
    * @param _minter The address to set as the minter.
    */
   function setMinter(address _minter) external {
-    if (minter != address(0)) {
+    if (MINTER_ADDRESS != address(0)) {
       revert MinterAlreadySet();
     }
-    minter = _minter;
+    MINTER_ADDRESS = _minter;
+  }
+
+  /**
+   * @dev Returns the name of the token.
+   */
+  function name() public view virtual override returns (string memory) {
+    return newName;
+  }
+
+  /**
+   * @dev Returns the symbol of the token, usually a shorter version of the
+   * name.
+   */
+  function symbol() public view virtual override returns (string memory) {
+    return newSymbol;
   }
 
   /**
@@ -63,6 +82,20 @@ contract TOT is ERC20, ReentrancyGuard, Ownable(msg.sender) {
    */
   function decimals() public view virtual override returns (uint8) {
     return newDecimals;
+  }
+
+  /**
+   * @notice Sets the metadata for the token, including its name and symbol.
+   * @dev Only callable by the contract owner.
+   * @param _name The new name of the token.
+   * @param _symbol The new symbol of the token.
+   */
+  function setMetadata(
+    string memory _name,
+    string memory _symbol
+  ) public onlyOwner {
+    newName = _name;
+    newSymbol = _symbol;
   }
 
   /**

@@ -2,15 +2,14 @@
 pragma solidity ^0.8.20;
 
 import { IOpenVoucher } from "../interface/IOpenVoucher.sol";
-import { TOT } from "./TOT.sol";
+import { FiatToken } from "./FiatToken.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract GimSwap is Ownable {
   IOpenVoucher public immutable VOUCHER_CONTRACT;
-  TOT public immutable TOKEN_CONTRACT;
+  FiatToken public immutable TOKEN_CONTRACT;
   uint256 internal voucherDeposit = 0;
   address public feeReceiver;
-  uint8 public voucherUnit;
   uint256 public constant MAXIMUM_FEE_NUMERATOR = 30; // 0.3%
   uint256 public feeNumerator = 0;
   uint256 public constant FEE_DENOMINATOR = 10000; // fee basis points
@@ -33,20 +32,16 @@ contract GimSwap is Ownable {
   /**
    * @notice Constructor to initialize the GimSwap contract.
    * @param _voucherContractAddress The address of the voucher contract.
-   * @param _tokenName              The name of the TOT token.
-   * @param _tokenSymbol            The symbol of the TOT token.
+   * @param _tokenContractAddress   The address of the TOT token.
    * @param _feeReceiver            The address to receive fees.
    */
   constructor(
     address _voucherContractAddress,
-    string memory _tokenName,
-    string memory _tokenSymbol,
+    address _tokenContractAddress,
     address _feeReceiver
   ) Ownable(msg.sender) {
     VOUCHER_CONTRACT = IOpenVoucher(_voucherContractAddress);
-    // Scaled up by a factor of 10^4 compared to the KRW.
-    voucherUnit = VOUCHER_CONTRACT.decimals();
-    TOKEN_CONTRACT = new TOT(_tokenName, _tokenSymbol, voucherUnit - 4);
+    TOKEN_CONTRACT = FiatToken(_tokenContractAddress);
     feeReceiver = _feeReceiver;
   }
 

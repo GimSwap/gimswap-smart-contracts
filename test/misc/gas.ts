@@ -1,6 +1,6 @@
 import { OpenVoucher, OpenVoucherInstance } from "../helpers";
 import { GimSwapInstance } from "../../@types/generated/GimSwap";
-import { TOTInstance } from "../../@types/generated/TOT";
+import { FiatTokenInstance } from "../../@types/generated/FiatToken";
 import { GimSwapHelperInstance } from "../../@types/generated/GimSwapHelper";
 
 const TARGET_VERSION = "1";
@@ -8,11 +8,11 @@ const consoleMessage = "gas used for the test below:";
 
 const GimSwap = artifacts.require("GimSwap");
 const GimSwapHelper = artifacts.require("GimSwapHelper");
-const TOT = artifacts.require("TOT");
+const FiatToken = artifacts.require("FiatToken");
 
 describe(`gas costs for version ${TARGET_VERSION}`, () => {
   let ov: OpenVoucherInstance;
-  let tot: TOTInstance;
+  let fiatToken: FiatTokenInstance;
   let gimswap: GimSwapInstance;
   let gimswapHelper: GimSwapHelperInstance;
   let ovOwner: string;
@@ -35,13 +35,17 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
     const decimals = 6;
 
     ov = await OpenVoucher.new("OV", decimals, ovOwner);
-    tot = await TOT.new("TOT", "TOT", decimals);
-    gimswap = await GimSwap.new(ov.address, tot.address, gimswapFeeReceiver, {
-      from: gimswapOwner,
-    });
-    await tot.setMinter(gimswap.address, { from: gimswapOwner });
+    fiatToken = await FiatToken.new("KRWO", "KRWO", decimals);
+    gimswap = await GimSwap.new(
+      ov.address,
+      fiatToken.address,
+      gimswapFeeReceiver,
+      {
+        from: gimswapOwner,
+      }
+    );
+    await fiatToken.setMinter(gimswap.address, { from: gimswapOwner });
     gimswapHelper = await GimSwapHelper.new(gimswap.address);
-    tot = await TOT.at(await gimswap.TOKEN_CONTRACT());
   });
 
   it("gimswap set fee", async () => {
@@ -72,7 +76,7 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
         from: alice,
       }
     );
-    const tx = await tot.transferAndCall(
+    const tx = await fiatToken.transferAndCall(
       gimswap.address,
       3e10,
       gimswap.address,
@@ -80,3 +84,32 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
     );
     console.log(consoleMessage, tx.receipt.gasUsed);
   });
+
+  it("gimswapHelper swap fiat token for 3rd party value", async () => {
+    await ov.addToVoucherUnitExemptionWhitelist(bob);
+    await ov.mint(alice, 10e10);
+    await ov.transferVoucherAndCall(
+      gimswap.address,
+      10e10,
+      gimswap.address,
+      "0x",
+      {
+        from: alice,
+      }
+    );
+    await fiatToken.approve(gimswapHelper.address, 10e10, { from: alice });
+    await ov.approveVoucher(gimswapHelper.address, 10e10, { from: alice });
+    const tx = await gimswapHelper.exchangeTokenForVoucherExchange(
+      bob, // dummy
+      [fiatToken.address],
+      [],
+      10e10,
+      10e10,
+      0,
+      bob,
+      "dummy",
+      { from: alice }
+    );
+    console.log(consoleMessage, tx.receipt.gasUsed);
+  });
+});

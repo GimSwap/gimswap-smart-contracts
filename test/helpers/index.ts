@@ -74,6 +74,16 @@ export class OpenVoucherInstance {
       .send(opt);
   }
 
+  async approveVoucher(
+    spender: string,
+    amount: number,
+    opt?: txOption
+  ): Promise<any> {
+    return this._deployedContract.methods
+      .approveVoucher(spender, amount)
+      .send(opt);
+  }
+
   async totalSupplyOfVoucher(): Promise<BN> {
     const result = await this._deployedContract.methods
       .totalSupplyOfVoucher()
@@ -86,6 +96,12 @@ export class OpenVoucherInstance {
       .balanceOf(address)
       .call();
     return new BN(result);
+  }
+
+  async addToVoucherUnitExemptionWhitelist(address: string): Promise<any> {
+    return this._deployedContract.methods
+      .addToVoucherUnitExemptionWhitelist(address)
+      .send({ from: this._deployer });
   }
 }
 

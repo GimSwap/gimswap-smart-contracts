@@ -1,13 +1,13 @@
 import { expectRevert, OpenVoucher, OpenVoucherInstance } from "../helpers";
 import { GimSwapInstance } from "../../@types/generated/GimSwap";
-import { TOTInstance } from "../../@types/generated/TOT";
+import { FiatTokenInstance } from "../../@types/generated/FiatToken";
 
 const GimSwap = artifacts.require("GimSwap");
-const TOT = artifacts.require("TOT");
+const FiatToken = artifacts.require("FiatToken");
 
 describe("GimSwap", () => {
   let ov: OpenVoucherInstance;
-  let tot: TOTInstance;
+  let fiatToken: FiatTokenInstance;
   let gimswap: GimSwapInstance;
   let ovOwner: string;
   let gimswapOwner: string;
@@ -26,25 +26,50 @@ describe("GimSwap", () => {
 
   beforeEach(async () => {
     const decimals = 6;
-    const totName = "TOT";
+    const fiatTokenName = "KRWO";
 
     ov = await OpenVoucher.new("OV", decimals, ovOwner);
-    tot = await TOT.new(totName, totName, decimals);
-    gimswap = await GimSwap.new(ov.address, tot.address, gimswapFeeReceiver, {
+    fiatToken = await FiatToken.new(fiatTokenName, fiatTokenName, decimals, {
       from: gimswapOwner,
     });
-    await tot.setMinter(gimswap.address, { from: gimswapOwner });
-    expect((await tot.decimals()).toNumber()).to.equal(decimals);
-    expect(await tot.name()).to.equal(totName);
-    expect(await tot.symbol()).to.equal(totName);
-    expect(await tot.minter()).to.equal(gimswap.address);
+    gimswap = await GimSwap.new(
+      ov.address,
+      fiatToken.address,
+      gimswapFeeReceiver,
+      {
+        from: gimswapOwner,
+      }
+    );
+    await fiatToken.setMinter(gimswap.address, { from: gimswapOwner });
+    expect((await fiatToken.decimals()).toNumber()).to.equal(decimals);
+    expect(await fiatToken.name()).to.equal(fiatTokenName);
+    expect(await fiatToken.symbol()).to.equal(fiatTokenName);
+    expect(await fiatToken.MINTER_ADDRESS()).to.equal(gimswap.address);
+    expect(await fiatToken.owner()).to.equal(gimswapOwner);
   });
 
-  it("should fail to set minter of tot if it has not been set already", async () => {
+  it("should fail to set minter of fiat token if it has been set already", async () => {
     await expectRevert(
-      tot.setMinter(gimswapOwner, { from: gimswapOwner }),
+      fiatToken.setMinter(gimswapOwner, { from: gimswapOwner }),
       "MinterAlreadySet()"
     );
+  });
+
+  it("should fail to set to name and symbol due to permission", async () => {
+    const newName = "NEW_NAME";
+    const newSymbol = "NEW_SYMBOL";
+    await expectRevert(
+      fiatToken.setMetadata(newName, newSymbol, { from: alice }),
+      "OwnableUnauthorizedAccount"
+    );
+  });
+
+  it("should successfully set to name and symbol", async () => {
+    const newName = "NEW_NAME";
+    const newSymbol = "NEW_SYMBOL";
+    await fiatToken.setMetadata(newName, newSymbol, { from: gimswapOwner });
+    expect(await fiatToken.name()).to.equal(newName);
+    expect(await fiatToken.symbol()).to.equal(newSymbol);
   });
 
   it("should fail to set fee due to exceeding maximum limit", async () => {
@@ -74,13 +99,13 @@ describe("GimSwap", () => {
     expect((await gimswap.feeNumerator()).toNumber()).to.equal(fee);
   });
 
-  it("swap ov for tot", async () => {
+  it("swap ov for fiat token", async () => {
     const mintAmount = 10e10;
     const swapAmount = 3e10;
     expect((await ov.totalSupplyOfVoucher()).toNumber()).to.equal(0);
     expect((await ov.balanceOf(alice)).toNumber()).to.equal(0);
-    expect((await tot.totalSupply()).toNumber()).to.equal(0);
-    expect((await tot.balanceOf(alice)).toNumber()).to.equal(0);
+    expect((await fiatToken.totalSupply()).toNumber()).to.equal(0);
+    expect((await fiatToken.balanceOf(alice)).toNumber()).to.equal(0);
 
     await ov.mint(alice, mintAmount);
     expect((await ov.totalSupplyOfVoucher()).toNumber()).to.equal(mintAmount);
@@ -99,11 +124,11 @@ describe("GimSwap", () => {
     expect((await ov.balanceOf(alice)).toNumber()).to.equal(
       mintAmount - swapAmount
     );
-    expect((await tot.totalSupply()).toNumber()).to.equal(swapAmount);
-    expect((await tot.balanceOf(alice)).toNumber()).to.equal(swapAmount);
+    expect((await fiatToken.totalSupply()).toNumber()).to.equal(swapAmount);
+    expect((await fiatToken.balanceOf(alice)).toNumber()).to.equal(swapAmount);
   });
 
-  it("should successfully swap tot for ov without fee", async () => {
+  it("should successfully swap fiat token for ov without fee", async () => {
     const mintAmount = 10e10;
     const swapAmount = 3e10;
 
@@ -119,26 +144,31 @@ describe("GimSwap", () => {
       mintAmount
     );
     expect((await ov.balanceOf(alice)).toNumber()).to.equal(0);
-    expect((await tot.totalSupply()).toNumber()).to.equal(mintAmount);
-    expect((await tot.balanceOf(alice)).toNumber()).to.equal(mintAmount);
+    expect((await fiatToken.totalSupply()).toNumber()).to.equal(mintAmount);
+    expect((await fiatToken.balanceOf(alice)).toNumber()).to.equal(mintAmount);
 
-    await tot.transferAndCall(gimswap.address, swapAmount, gimswap.address, {
-      from: alice,
-    });
+    await fiatToken.transferAndCall(
+      gimswap.address,
+      swapAmount,
+      gimswap.address,
+      {
+        from: alice,
+      }
+    );
     expect((await ov.balanceOf(alice)).toNumber()).to.equal(swapAmount);
     expect((await ov.balanceOf(gimswap.address)).toNumber()).to.equal(
       mintAmount - swapAmount
     );
     expect((await ov.totalSupplyOfVoucher()).toNumber()).to.equal(mintAmount);
-    expect((await tot.balanceOf(alice)).toNumber()).to.equal(
+    expect((await fiatToken.balanceOf(alice)).toNumber()).to.equal(
       mintAmount - swapAmount
     );
-    expect((await tot.totalSupply()).toNumber()).to.equal(
+    expect((await fiatToken.totalSupply()).toNumber()).to.equal(
       mintAmount - swapAmount
     );
   });
 
-  it("should successfully swap tot for ov with fee", async () => {
+  it("should successfully swap fiat token for ov with fee", async () => {
     const mintAmount = 10e10;
     const swapAmount = 3e10;
     const feeNumerator = 10;
@@ -159,10 +189,10 @@ describe("GimSwap", () => {
       mintAmount
     );
     expect((await ov.balanceOf(alice)).toNumber()).to.equal(0);
-    expect((await tot.totalSupply()).toNumber()).to.equal(mintAmount);
-    expect((await tot.balanceOf(alice)).toNumber()).to.equal(mintAmount);
+    expect((await fiatToken.totalSupply()).toNumber()).to.equal(mintAmount);
+    expect((await fiatToken.balanceOf(alice)).toNumber()).to.equal(mintAmount);
 
-    await tot.transferAndCall(
+    await fiatToken.transferAndCall(
       gimswap.address,
       swapAmountFeeIncluded,
       gimswap.address,
@@ -175,13 +205,13 @@ describe("GimSwap", () => {
       mintAmount - swapAmount
     );
     expect((await ov.totalSupplyOfVoucher()).toNumber()).to.equal(mintAmount);
-    expect((await tot.balanceOf(gimswapFeeReceiver)).toNumber()).to.equal(
+    expect((await fiatToken.balanceOf(gimswapFeeReceiver)).toNumber()).to.equal(
       feeForSwapAmount
     );
-    expect((await tot.balanceOf(alice)).toNumber()).to.equal(
+    expect((await fiatToken.balanceOf(alice)).toNumber()).to.equal(
       mintAmount - swapAmountFeeIncluded
     );
-    expect((await tot.totalSupply()).toNumber()).to.equal(
+    expect((await fiatToken.totalSupply()).toNumber()).to.equal(
       mintAmount - swapAmount
     );
   });

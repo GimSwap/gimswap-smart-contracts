@@ -26,4 +26,11 @@ interface IOpenVoucher {
     uint256 value,
     string calldata id
   ) external returns (bool);
+
+  function transferVoucherFromForExchange(
+    address from,
+    address to,
+    uint256 value,
+    string calldata id
+  ) external returns (bool);
 }

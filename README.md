@@ -2,9 +2,18 @@
 <!-- omit in toc -->
 # GimSwap
 <!-- prettier-ignore-end -->
-
 This repository contains the smart contracts for [GimSwap](https://www.gimswap.com), which can be used on EVM-compatible blockchains. All contracts are written in [Solidity](https://soliditylang.org/) and managed
 by the [Hardhat](https://hardhat.org/) framework.
+
+## Deployed Contract
+
+### Kaia Mainnet
+KRWO token
+[0x7FC692699f2216647a0E06225d8bdF8cDeE40e7F](https://kaiascan.io/token/0x7fc692699f2216647a0e06225d8bdf8cdee40e7f)
+
+GimSwap Contract
+[0x663e9d64cDd9B8cc7B0f073BbFB927AA8D154BE0](https://kaiascan.io/address/0x663e9d64cdd9b8cc7b0f073bbfb927aa8d154be0)
+
 
 ## Setup
 

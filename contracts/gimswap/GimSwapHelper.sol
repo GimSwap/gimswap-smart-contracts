@@ -8,6 +8,7 @@ import { ISwapRouter } from "../interface/ISwapRouter.sol";
 import { IWKaia } from "../interface/IWKaia.sol";
 
 contract GimSwapHelper {
+  address public swapRouterAddress;
   GimSwap public gimSwap;
   IWKaia private wKaia;
   uint256 private voucherDecimal = 10 ** 10;
@@ -23,14 +24,14 @@ contract GimSwapHelper {
   error CallerIsNotVoucherContract(address caller);
   error VoucherMustBeSentToThisContract(address recipient);
 
-  constructor(address gimSwapAddress) {
+  constructor(address gimSwapAddress, address _swapRouterAddress) {
     gimSwap = GimSwap(gimSwapAddress);
+    swapRouterAddress = _swapRouterAddress;
     wKaia = IWKaia(0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432);
   }
 
   /**
    * @notice Exchanges input tokens for vouchers through the Uniswap V3 protocol, optionally swapping through multiple tokens.
-   * @param swapRouterAddress         The address of the Uniswap V3 swap router contract.
    * @param tokenPaths                An array of token addresses representing the swap path, with the last token being fiat token.
    * @param fees                      An array of fee levels for each pool in the swap path.
    * @param amountInMaximum           The maximum amount of input tokens that the sender is willing to spend.
@@ -41,7 +42,6 @@ contract GimSwapHelper {
    * @return amountIn                 The amount of input tokens actually spent.
    */
   function exchangeTokenForVoucherExchange(
-    address swapRouterAddress,
     address[] memory tokenPaths,
     uint24[] memory fees,
     uint256 amountInMaximum,

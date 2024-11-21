@@ -47,7 +47,7 @@ describe("GimSwapHelper", () => {
       }
     );
     await fiatToken.setMinter(gimswap.address, { from: gimswapOwner });
-    gimswapHelper = await GimSwapHelper.new(gimswap.address);
+    gimswapHelper = await GimSwapHelper.new(gimswap.address, dummy);
     expect((await fiatToken.decimals()).toNumber()).to.equal(decimals);
     expect(await fiatToken.name()).to.equal(fiatTokenName);
     expect(await fiatToken.symbol()).to.equal(fiatTokenName);
@@ -69,7 +69,6 @@ describe("GimSwapHelper", () => {
 
     await expectRevert(
       gimswapHelper.exchangeTokenForVoucherExchange(
-        dummy,
         [fiatToken.address],
         [],
         swapAmount,
@@ -85,7 +84,6 @@ describe("GimSwapHelper", () => {
     await fiatToken.approve(gimswapHelper.address, swapAmount, { from: alice });
     await ov.approveVoucher(gimswapHelper.address, swapAmount, { from: alice });
     await gimswapHelper.exchangeTokenForVoucherExchange(
-      dummy,
       [fiatToken.address],
       [],
       swapAmount,
@@ -121,7 +119,6 @@ describe("GimSwapHelper", () => {
     await ov.approveVoucher(gimswapHelper.address, swapAmount, { from: alice });
     // Alice wants to obtain 3 vouchers by paying 1 OV. In other words, 2 FiatTokens and 1 OV are used.
     await gimswapHelper.exchangeTokenForVoucherExchange(
-      dummy,
       [fiatToken.address],
       [],
       swapAmount,
@@ -157,7 +154,6 @@ describe("GimSwapHelper", () => {
     await ov.approveVoucher(gimswapHelper.address, swapAmount, { from: alice });
     // Alice wants to obtain 3.2 vouchers by paying 0.2 OV. In other words, 3 FiatTokens and 0.2 OV are used.
     await gimswapHelper.exchangeTokenForVoucherExchange(
-      dummy,
       [fiatToken.address],
       [],
       swapAmount,
@@ -192,7 +188,6 @@ describe("GimSwapHelper", () => {
     await fiatToken.approve(gimswapHelper.address, swapAmount, { from: alice });
     // Alice wants to use the additional OV balance to get 3 OVs, but due to decimal settings, the minimum number of OVs required through GimSwap is 3, so the balance is not used.
     await gimswapHelper.exchangeTokenForVoucherExchange(
-      dummy,
       [fiatToken.address],
       [],
       swapAmount,
@@ -230,7 +225,6 @@ describe("GimSwapHelper", () => {
     await ov.approveVoucher(gimswapHelper.address, swapAmount, { from: alice });
     // Alice wants to use the additional OV balance to get 5.1 OVs, but due to decimal settings, the minimum number of OVs required through GimSwap is 3, so only 2.1 OVs from the balance are used.
     await gimswapHelper.exchangeTokenForVoucherExchange(
-      dummy,
       [fiatToken.address],
       [],
       swapAmount,
@@ -266,7 +260,6 @@ describe("GimSwapHelper", () => {
     await ov.approveVoucher(gimswapHelper.address, swapAmount, { from: alice });
     // Alice wants to use the additional OV balance to get 5.2 OVs, but due to decimal settings, the minimum number of OVs required through GimSwap is 4, so only 1.2 OVs from the balance are used.
     await gimswapHelper.exchangeTokenForVoucherExchange(
-      dummy,
       [fiatToken.address],
       [],
       swapAmount,

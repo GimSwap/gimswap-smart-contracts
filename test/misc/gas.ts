@@ -20,6 +20,7 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
   let gimswapFeeReceiver: string;
   let alice: string;
   let bob: string;
+  let dummy: string;
 
   before(async () => {
     const accounts = await web3.eth.getAccounts();
@@ -28,7 +29,7 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
         "Not enough accounts available. At least 5 accounts are required."
       );
     }
-    [ovOwner, gimswapOwner, gimswapFeeReceiver, alice, bob] = accounts;
+    [ovOwner, gimswapOwner, gimswapFeeReceiver, alice, bob, dummy] = accounts;
   });
 
   beforeEach(async () => {
@@ -45,7 +46,7 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
       }
     );
     await fiatToken.setMinter(gimswap.address, { from: gimswapOwner });
-    gimswapHelper = await GimSwapHelper.new(gimswap.address);
+    gimswapHelper = await GimSwapHelper.new(gimswap.address, dummy);
   });
 
   it("gimswap set fee", async () => {
@@ -100,7 +101,6 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
     await fiatToken.approve(gimswapHelper.address, 10e10, { from: alice });
     await ov.approveVoucher(gimswapHelper.address, 10e10, { from: alice });
     const tx = await gimswapHelper.exchangeTokenForVoucherExchange(
-      bob, // dummy
       [fiatToken.address],
       [],
       10e10,

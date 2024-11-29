@@ -69,9 +69,7 @@ contract GimSwapHelper {
       preExistingVoucherAmount +
       voucherDecimal -
       1) / voucherDecimal) * voucherDecimal;
-    uint256 fiatTokenNeeded = additionalVoucherAmountNeeded +
-      (additionalVoucherAmountNeeded * gimSwap.feeNumerator()) /
-      gimSwap.FEE_DENOMINATOR();
+    uint256 fiatTokenNeeded = additionalVoucherAmountNeeded;
 
     if (tokenPaths.length > 1) {
       // If the input token is not fiat token

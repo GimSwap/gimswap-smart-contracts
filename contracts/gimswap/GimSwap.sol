@@ -3,18 +3,13 @@ pragma solidity ^0.8.20;
 
 import { IOpenVoucher } from "../interface/IOpenVoucher.sol";
 import { FiatToken } from "./FiatToken.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract GimSwap is Ownable {
+contract GimSwap {
   IOpenVoucher public immutable VOUCHER_CONTRACT;
   FiatToken public immutable TOKEN_CONTRACT;
   uint256 internal voucherDeposit = 0;
-  address public feeReceiver;
-  uint256 public constant MAXIMUM_FEE_NUMERATOR = 30; // 0.3%
-  uint256 public feeNumerator = 0;
-  uint256 public constant FEE_DENOMINATOR = 10000; // fee basis points
+  address public bonusReceiver;
 
-  error FeeExceedsMaximumLimit(uint256 maximumFee, uint256 attemptedFee);
   error CallerIsNotVoucherContract(address caller);
   error VoucherMustBeSentToThisContract(address recipient);
   error NoNewVouchersDeposited();
@@ -33,35 +28,11 @@ contract GimSwap is Ownable {
    * @notice Constructor to initialize the GimSwap contract.
    * @param _voucherContractAddress The address of the voucher contract.
    * @param _tokenContractAddress   The address of the TOT token.
-   * @param _feeReceiver            The address to receive fees.
    */
-  constructor(
-    address _voucherContractAddress,
-    address _tokenContractAddress,
-    address _feeReceiver
-  ) Ownable(msg.sender) {
+  constructor(address _voucherContractAddress, address _tokenContractAddress) {
     VOUCHER_CONTRACT = IOpenVoucher(_voucherContractAddress);
     TOKEN_CONTRACT = FiatToken(_tokenContractAddress);
-    feeReceiver = _feeReceiver;
-  }
-
-  /**
-   * @notice Allows the owner to update the address of fee receiver.
-   * @param _newFeeReceiver The address of the new fee receiver.
-   */
-  function resetFeeReceiver(address _newFeeReceiver) external onlyOwner {
-    feeReceiver = _newFeeReceiver;
-  }
-
-  /**
-   * @notice Allows the owner to set a new fee.
-   * @param newFeeNumerator The new fee numerator value.
-   */
-  function setFee(uint256 newFeeNumerator) external onlyOwner {
-    if (MAXIMUM_FEE_NUMERATOR < newFeeNumerator) {
-      revert FeeExceedsMaximumLimit(MAXIMUM_FEE_NUMERATOR, newFeeNumerator);
-    }
-    feeNumerator = newFeeNumerator;
+    bonusReceiver = msg.sender;
   }
 
   /**
@@ -98,9 +69,9 @@ contract GimSwap is Ownable {
 
     uint256 amountFromUnknownSource = increasedAmount - value;
     TOKEN_CONTRACT.mint(from, value);
-    // If the increased amount exceeds the user’s deposit, mint the excess to the fee receiver’s address.
+    // If the increased amount exceeds the user’s deposit, mint the excess to the bonus receiver’s address.
     if (amountFromUnknownSource > 0) {
-      TOKEN_CONTRACT.mint(feeReceiver, amountFromUnknownSource);
+      TOKEN_CONTRACT.mint(bonusReceiver, amountFromUnknownSource);
     }
     voucherDeposit = newVoucherBalance;
     if (voucherDeposit != TOKEN_CONTRACT.totalSupply()) {
@@ -133,21 +104,14 @@ contract GimSwap is Ownable {
       revert ImpossibleTokenBalance(newTokenBalance, value);
     }
 
-    uint256 valueFeeExcluded = (value * FEE_DENOMINATOR) /
-      (FEE_DENOMINATOR + feeNumerator);
-    uint256 fee = value - valueFeeExcluded;
-
     uint256 amountFromUnknownSource = newTokenBalance - value;
-    TOKEN_CONTRACT.burn(valueFeeExcluded);
-    voucherDeposit =
-      VOUCHER_CONTRACT.balanceOf(address(this)) -
-      valueFeeExcluded;
+    TOKEN_CONTRACT.burn(value);
+    voucherDeposit = VOUCHER_CONTRACT.balanceOf(address(this)) - value;
     // If the transfer is not made in voucher units, the OpenVoucher contract will revert.
-    VOUCHER_CONTRACT.transfer(from, valueFeeExcluded);
-    TOKEN_CONTRACT.transfer(feeReceiver, fee);
-    // If the increased amount exceeds the user’s deposit, transfers the excess to the fee receiver’s address.
+    VOUCHER_CONTRACT.transfer(from, value);
+    // If the increased amount exceeds the user’s deposit, transfers the excess to the bonus receiver’s address.
     if (amountFromUnknownSource > 0) {
-      TOKEN_CONTRACT.transfer(feeReceiver, amountFromUnknownSource);
+      TOKEN_CONTRACT.transfer(bonusReceiver, amountFromUnknownSource);
     }
     if (voucherDeposit != TOKEN_CONTRACT.totalSupply()) {
       revert VoucherDepositMismatch(

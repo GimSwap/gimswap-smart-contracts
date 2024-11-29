@@ -17,7 +17,6 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
   let gimswapHelper: GimSwapHelperInstance;
   let ovOwner: string;
   let gimswapOwner: string;
-  let gimswapFeeReceiver: string;
   let alice: string;
   let bob: string;
   let dummy: string;
@@ -29,7 +28,7 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
         "Not enough accounts available. At least 5 accounts are required."
       );
     }
-    [ovOwner, gimswapOwner, gimswapFeeReceiver, alice, bob, dummy] = accounts;
+    [ovOwner, gimswapOwner, alice, bob, dummy] = accounts;
   });
 
   beforeEach(async () => {
@@ -37,21 +36,11 @@ describe(`gas costs for version ${TARGET_VERSION}`, () => {
 
     ov = await OpenVoucher.new("OV", decimals, ovOwner);
     fiatToken = await FiatToken.new("KRWO", "KRWO", decimals);
-    gimswap = await GimSwap.new(
-      ov.address,
-      fiatToken.address,
-      gimswapFeeReceiver,
-      {
-        from: gimswapOwner,
-      }
-    );
+    gimswap = await GimSwap.new(ov.address, fiatToken.address, {
+      from: gimswapOwner,
+    });
     await fiatToken.setMinter(gimswap.address, { from: gimswapOwner });
     gimswapHelper = await GimSwapHelper.new(gimswap.address, dummy);
-  });
-
-  it("gimswap set fee", async () => {
-    const tx = await gimswap.setFee(30, { from: gimswapOwner });
-    console.log(consoleMessage, tx.receipt.gasUsed);
   });
 
   it("gimswap swap ov for token", async () => {

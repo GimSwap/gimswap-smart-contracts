@@ -15,7 +15,6 @@ describe("GimSwapHelper", () => {
   let gimswapHelper: GimSwapHelperInstance;
   let ovOwner: string;
   let gimswapOwner: string;
-  let gimswapFeeReceiver: string;
   let alice: string;
   let bob: string;
   let dummy: string;
@@ -27,7 +26,7 @@ describe("GimSwapHelper", () => {
         "Not enough accounts available. At least 6 accounts are required."
       );
     }
-    [ovOwner, gimswapOwner, gimswapFeeReceiver, alice, bob, dummy] = accounts;
+    [ovOwner, gimswapOwner, alice, bob, dummy] = accounts;
   });
 
   beforeEach(async () => {
@@ -38,14 +37,9 @@ describe("GimSwapHelper", () => {
     fiatToken = await FiatToken.new(fiatTokenName, fiatTokenName, decimals);
     await ov.addToVoucherUnitExemptionWhitelist(bob);
     fiatToken = await FiatToken.new(fiatTokenName, fiatTokenName, decimals);
-    gimswap = await GimSwap.new(
-      ov.address,
-      fiatToken.address,
-      gimswapFeeReceiver,
-      {
-        from: gimswapOwner,
-      }
-    );
+    gimswap = await GimSwap.new(ov.address, fiatToken.address, {
+      from: gimswapOwner,
+    });
     await fiatToken.setMinter(gimswap.address, { from: gimswapOwner });
     gimswapHelper = await GimSwapHelper.new(gimswap.address, dummy);
     expect((await fiatToken.decimals()).toNumber()).to.equal(decimals);

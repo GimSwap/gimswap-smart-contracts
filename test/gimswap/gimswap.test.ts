@@ -11,7 +11,6 @@ describe("GimSwap", () => {
   let gimswap: GimSwapInstance;
   let ovOwner: string;
   let gimswapOwner: string;
-  let gimswapFeeReceiver: string;
   let alice: string;
 
   before(async () => {
@@ -21,7 +20,7 @@ describe("GimSwap", () => {
         "Not enough accounts available. At least 4 accounts are required."
       );
     }
-    [ovOwner, gimswapOwner, gimswapFeeReceiver, alice] = accounts;
+    [ovOwner, gimswapOwner, alice] = accounts;
   });
 
   beforeEach(async () => {
@@ -32,14 +31,9 @@ describe("GimSwap", () => {
     fiatToken = await FiatToken.new(fiatTokenName, fiatTokenName, decimals, {
       from: gimswapOwner,
     });
-    gimswap = await GimSwap.new(
-      ov.address,
-      fiatToken.address,
-      gimswapFeeReceiver,
-      {
-        from: gimswapOwner,
-      }
-    );
+    gimswap = await GimSwap.new(ov.address, fiatToken.address, {
+      from: gimswapOwner,
+    });
     await fiatToken.setMinter(gimswap.address, { from: gimswapOwner });
     expect((await fiatToken.decimals()).toNumber()).to.equal(decimals);
     expect(await fiatToken.name()).to.equal(fiatTokenName);
@@ -70,33 +64,6 @@ describe("GimSwap", () => {
     await fiatToken.setMetadata(newName, newSymbol, { from: gimswapOwner });
     expect(await fiatToken.name()).to.equal(newName);
     expect(await fiatToken.symbol()).to.equal(newSymbol);
-  });
-
-  it("should fail to set fee due to exceeding maximum limit", async () => {
-    const fee = 100;
-    expect((await gimswap.feeNumerator()).toNumber()).to.equal(0);
-    await expectRevert(
-      gimswap.setFee(fee, { from: gimswapOwner }),
-      "FeeExceedsMaximumLimit(30, 100)"
-    );
-    expect((await gimswap.feeNumerator()).toNumber()).to.equal(0);
-  });
-
-  it("should fail to set fee due to permission", async () => {
-    const fee = 30;
-    expect((await gimswap.feeNumerator()).toNumber()).to.equal(0);
-    await expectRevert(
-      gimswap.setFee(fee, { from: alice }),
-      "OwnableUnauthorizedAccount"
-    );
-    expect((await gimswap.feeNumerator()).toNumber()).to.equal(0);
-  });
-
-  it("should successfully set the fee when within the maximum limit", async () => {
-    const fee = 30;
-    expect((await gimswap.feeNumerator()).toNumber()).to.equal(0);
-    await gimswap.setFee(fee, { from: gimswapOwner });
-    expect((await gimswap.feeNumerator()).toNumber()).to.equal(fee);
   });
 
   it("swap ov for fiat token", async () => {
@@ -162,54 +129,6 @@ describe("GimSwap", () => {
     expect((await ov.totalSupplyOfVoucher()).toNumber()).to.equal(mintAmount);
     expect((await fiatToken.balanceOf(alice)).toNumber()).to.equal(
       mintAmount - swapAmount
-    );
-    expect((await fiatToken.totalSupply()).toNumber()).to.equal(
-      mintAmount - swapAmount
-    );
-  });
-
-  it("should successfully swap fiat token for ov with fee", async () => {
-    const mintAmount = 10e10;
-    const swapAmount = 3e10;
-    const feeNumerator = 10;
-    const feeDenominator = (await gimswap.FEE_DENOMINATOR()).toNumber();
-    const feeForSwapAmount = (swapAmount * feeNumerator) / feeDenominator;
-    const swapAmountFeeIncluded = swapAmount + feeForSwapAmount;
-
-    await gimswap.setFee(feeNumerator, { from: gimswapOwner });
-    await ov.mint(alice, mintAmount);
-    await ov.transferVoucherAndCall(
-      gimswap.address,
-      mintAmount,
-      gimswap.address,
-      "0x",
-      { from: alice }
-    );
-    expect((await ov.balanceOf(gimswap.address)).toNumber()).to.equal(
-      mintAmount
-    );
-    expect((await ov.balanceOf(alice)).toNumber()).to.equal(0);
-    expect((await fiatToken.totalSupply()).toNumber()).to.equal(mintAmount);
-    expect((await fiatToken.balanceOf(alice)).toNumber()).to.equal(mintAmount);
-
-    await fiatToken.transferAndCall(
-      gimswap.address,
-      swapAmountFeeIncluded,
-      gimswap.address,
-      {
-        from: alice,
-      }
-    );
-    expect((await ov.balanceOf(alice)).toNumber()).to.equal(swapAmount);
-    expect((await ov.balanceOf(gimswap.address)).toNumber()).to.equal(
-      mintAmount - swapAmount
-    );
-    expect((await ov.totalSupplyOfVoucher()).toNumber()).to.equal(mintAmount);
-    expect((await fiatToken.balanceOf(gimswapFeeReceiver)).toNumber()).to.equal(
-      feeForSwapAmount
-    );
-    expect((await fiatToken.balanceOf(alice)).toNumber()).to.equal(
-      mintAmount - swapAmountFeeIncluded
     );
     expect((await fiatToken.totalSupply()).toNumber()).to.equal(
       mintAmount - swapAmount

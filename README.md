@@ -15,6 +15,14 @@ GimSwap Contract
 [0x663e9d64cDd9B8cc7B0f073BbFB927AA8D154BE0](https://kaiascan.io/address/0x663e9d64cdd9b8cc7b0f073bbfb927aa8d154be0)
 
 
+### BSC Mainnet
+KRWO token
+[0x5868A0Bc3a64CFf82e19A135E17fE18E18E03bC1](https://bscscan.com/address/0x5868A0Bc3a64CFf82e19A135E17fE18E18E03bC1)
+
+GimSwap Contract
+[0x88cBe5D0088db1dFb302E5C58242153B6171F50B](https://bscscan.com/address/0x88cBe5D0088db1dFb302E5C58242153B6171F50B#tokentxns)
+
+
 ## Setup
 
 ### Development Environment
